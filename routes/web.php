@@ -8,6 +8,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\ResourceController; // <--- NUEVO IMPORTANTE
 
 /*
 |--------------------------------------------------------------------------
@@ -63,26 +64,22 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [GroupController::class, 'store'])->name('groups.store');
 
         // 2. Acciones de Miembros (Unirse/Salir)
-        // Nota: Es importante definir estas rutas ANTES de la ruta wildcard /{group} si hubiera conflicto, 
-        // pero como tienen prefijos /join y /leave, están seguras aquí.
         Route::post('/{group}/join', [GroupController::class, 'join'])->name('groups.join');
         Route::post('/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
 
         // 3. Ver Grupo Individual y Actualizar (Editar)
         Route::get('/{group}', [GroupController::class, 'show'])->name('groups.show');
-        Route::put('/{group}', [GroupController::class, 'update'])->name('groups.update'); // <--- Para editar foto/nombre
+        Route::put('/{group}', [GroupController::class, 'update'])->name('groups.update'); 
 
         // 4. Mensajes del Grupo
         Route::post('/{group}/messages', [GroupController::class, 'storeMessage'])->name('groups.message');
         
         // 5. Moderación (Eliminar mensaje y Expulsar)
-        // Usamos {message} y {user} para que coincidan con los argumentos del controlador
         Route::delete('/{group}/message/{message}', [GroupController::class, 'deleteMessage'])->name('groups.deleteMessage');
         Route::post('/{group}/expel/{user}', [GroupController::class, 'expelMember'])->name('groups.expelMember');
     });
 
     // --- CURSOS ---
-    // Nota: Si creaste un CourseController, deberías cambiar HomeController por CourseController aquí.
     Route::get('/courses', [HomeController::class, 'courses'])->name('courses');
     Route::post('/courses', [HomeController::class, 'storeCourse'])->name('courses.store');
     Route::post('/courses/{course}/enroll', [HomeController::class, 'enroll'])->name('courses.enroll');
@@ -90,7 +87,17 @@ Route::middleware('auth')->group(function () {
 
     // --- OTRAS SECCIONES ---
     Route::get('/events', [HomeController::class, 'events'])->name('events');
-    Route::get('/resources', [HomeController::class, 'resources'])->name('resources');
+    
+    // --- SECCIÓN DE RECURSOS (NUEVO CONTROLADOR) ---
+    // 1. Ver lista y Top 3
+    Route::get('/resources', [ResourceController::class, 'index'])->name('resources');
+    // 2. Subir recurso
+    Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
+    // 3. Descargar
+    Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
+    // 4. Calificar
+    Route::post('/resources/{resource}/rate', [ResourceController::class, 'rate'])->name('resources.rate');
+
 
     // --- AULA VIRTUAL ---
     Route::get('/classroom/{id}', function ($id) {
