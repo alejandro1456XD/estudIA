@@ -1,0 +1,91 @@
+/* Variables de colores */
+:root {
+    --primary-color: #1877f2;
+    --secondary-color: #42b72a;
+    --accent-color: #ff6b6b;
+    --warning-color: #ffd700;
+    --dark-color: #1c1e21;
+    --light-color: #f0f2f5;
+    --text-dark: #1c1e21;
+    --text-light: #65676b;
+    --white: #ffffff;
+}
+
+/* Estilos generales */
+body {
+    background-color: var(--light-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-dark);
+}
+
+/* Navbar */
+.navbar-brand {
+    font-size: 1.4rem;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+.logo-ia {
+    color: var(--warning-color);
+}
+
+.nav-link {
+    color: var(--white) !important;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--warning-color) !important;
+}
+
+/* Cards y posts */
+.post-card {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    border: none;
+    background: var(--white);
+}
+
+.sidebar {
+    position: sticky;
+    top: 20px;
+}
+
+/* Botones */
+.btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Footer */
+footer {
+    background-color: var(--dark-color) !important;
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        margin-top: 10px;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 8px 0;
+    }
+    
+    .sidebar {
+        position: static;
+        margin-bottom: 20px;
+    }
+}
+
+/* Utilidades */
+.text-primary { color: var(--primary-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.bg-primary { background-color: var(--primary-color) !important; }
+.bg-success { background-color: var(--secondary-color) !important; }
