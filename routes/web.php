@@ -8,7 +8,8 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GroupController;
-use App\Http\Controllers\ResourceController; // <--- NUEVO IMPORTANTE
+use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\EventController; // <--- NUEVO IMPORTANTE: Importar el controlador
 
 /*
 |--------------------------------------------------------------------------
@@ -57,24 +58,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/remove-friend/{user}', [FriendController::class, 'removeFriend'])->name('friends.remove');
     });
 
-    // --- GRUPOS (Lógica Completa) ---
+    // --- GRUPOS ---
     Route::prefix('groups')->group(function () {
-        // 1. Listado y Creación
         Route::get('/', [GroupController::class, 'index'])->name('groups');
         Route::post('/', [GroupController::class, 'store'])->name('groups.store');
-
-        // 2. Acciones de Miembros (Unirse/Salir)
         Route::post('/{group}/join', [GroupController::class, 'join'])->name('groups.join');
         Route::post('/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
-
-        // 3. Ver Grupo Individual y Actualizar (Editar)
         Route::get('/{group}', [GroupController::class, 'show'])->name('groups.show');
         Route::put('/{group}', [GroupController::class, 'update'])->name('groups.update'); 
-
-        // 4. Mensajes del Grupo
         Route::post('/{group}/messages', [GroupController::class, 'storeMessage'])->name('groups.message');
-        
-        // 5. Moderación (Eliminar mensaje y Expulsar)
         Route::delete('/{group}/message/{message}', [GroupController::class, 'deleteMessage'])->name('groups.deleteMessage');
         Route::post('/{group}/expel/{user}', [GroupController::class, 'expelMember'])->name('groups.expelMember');
     });
@@ -85,19 +77,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/courses/{course}/enroll', [HomeController::class, 'enroll'])->name('courses.enroll');
     Route::post('/courses/{course}/toggle-live', [HomeController::class, 'toggleLive'])->name('courses.toggle-live');
 
-    // --- OTRAS SECCIONES ---
-    Route::get('/events', [HomeController::class, 'events'])->name('events');
-    
-    // --- SECCIÓN DE RECURSOS (NUEVO CONTROLADOR) ---
-    // 1. Ver lista y Top 3
+    // --- RECURSOS ---
     Route::get('/resources', [ResourceController::class, 'index'])->name('resources');
-    // 2. Subir recurso
     Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
-    // 3. Descargar
     Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
-    // 4. Calificar
     Route::post('/resources/{resource}/rate', [ResourceController::class, 'rate'])->name('resources.rate');
 
+    // --- EVENTOS (NUEVO) ---
+    // 1. Ver calendario y crear
+    Route::get('/events', [EventController::class, 'index'])->name('events');
+    // 2. Ver mis eventos
+    Route::get('/events/my', [EventController::class, 'myEvents'])->name('events.my');
+    // 3. Crear evento
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    // 4. Asistir/Cancelar (Toggle)
+    Route::post('/events/{event}/attend', [EventController::class, 'toggleAttendance'])->name('events.attend');
 
     // --- AULA VIRTUAL ---
     Route::get('/classroom/{id}', function ($id) {

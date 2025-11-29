@@ -114,6 +114,14 @@ class User extends Authenticatable
         return $this->hasMany(GroupMessage::class);
     }
 
+    // --- RELACIÓN NUEVA: EVENTOS ---
+    // Eventos a los que el usuario asistirá
+    public function attendingEvents()
+    {
+        return $this->belongsToMany(Event::class, 'event_attendees')
+                    ->withTimestamps();
+    }
+
     // --- MÉTODOS ÚTILES PARA GRUPOS ---
 
     // Verificar si el usuario es miembro de un grupo específico
