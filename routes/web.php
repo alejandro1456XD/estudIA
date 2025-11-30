@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/remove-friend/{user}', [FriendController::class, 'removeFriend'])->name('friends.remove');
     });
 
-    // --- CHAT Y GESTIÓN DE GRUPOS (ACTUALIZADO) ---
+    // --- CHAT Y GESTIÓN DE GRUPOS ---
     Route::prefix('chat')->name('chat.')->group(function () {
         // Rutas básicas
         Route::get('/', [ChatController::class, 'index'])->name('index');
@@ -68,7 +68,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}', [ChatController::class, 'show'])->name('show');
         Route::post('/{id}/send', [ChatController::class, 'sendMessage'])->name('send');
 
-        // NUEVAS RUTAS DE GESTIÓN
+        // Rutas de gestión
         Route::post('/{id}/leave', [ChatController::class, 'leaveGroup'])->name('leave');
         Route::delete('/{id}/delete', [ChatController::class, 'deleteGroup'])->name('delete');
         Route::post('/{id}/photo', [ChatController::class, 'updatePhoto'])->name('photo');
@@ -77,7 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/remove-member/{user}', [ChatController::class, 'removeMember'])->name('removeMember');
     });
 
-    // --- GRUPOS (ESTUDIO) ---
+    // --- GRUPOS DE ESTUDIO ---
     Route::prefix('groups')->group(function () {
         Route::get('/', [GroupController::class, 'index'])->name('groups');
         Route::post('/', [GroupController::class, 'store'])->name('groups.store');
@@ -108,9 +108,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
     Route::post('/events/{event}/attend', [EventController::class, 'toggleAttendance'])->name('events.attend');
 
-    // --- AULA VIRTUAL ---
+    // --- AULA VIRTUAL (ACTUALIZADA) ---
+    // Busca el curso en la BD para pasar sus datos a la vista (necesario para conectar con el profesor)
     Route::get('/classroom/{id}', function ($id) {
-        return view('virtual-classroom', ['id' => $id]);
+        $course = \App\Models\Course::findOrFail($id);
+        return view('virtual-classroom', compact('course'));
     })->name('classroom');
 
 });
