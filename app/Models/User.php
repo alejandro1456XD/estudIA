@@ -11,8 +11,8 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 
-        'email', 
+        'name',
+        'email',
         'password',
         'bio',
         'profile_photo_path'
@@ -31,7 +31,17 @@ class User extends Authenticatable
         ];
     }
 
-    // --- RELACIONES ---
+    // --- RELACIONES DE CHAT (NUEVO) ---
+
+    public function conversations()
+    {
+        // Asegúrate de tener el modelo Conversation creado en App\Models
+        return $this->belongsToMany(Conversation::class, 'conversation_user')
+                    ->withPivot('last_read_at')
+                    ->withTimestamps();
+    }
+
+    // --- RELACIONES GENERALES ---
 
     public function posts()
     {
@@ -48,6 +58,8 @@ class User extends Authenticatable
         return $this->belongsToMany(Post::class, 'post_likes', 'user_id', 'post_id')
                     ->withTimestamps();
     }
+
+    // --- RELACIONES DE AMISTAD ---
 
     // 1. Amigos que YO agregué
     public function friends()
@@ -114,7 +126,8 @@ class User extends Authenticatable
         return $this->hasMany(GroupMessage::class);
     }
 
-    // --- RELACIÓN NUEVA: EVENTOS ---
+    // --- RELACIONES DE EVENTOS ---
+    
     // Eventos a los que el usuario asistirá
     public function attendingEvents()
     {

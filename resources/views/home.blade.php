@@ -32,6 +32,18 @@
         <!-- 2. CAJA DE PUBLICACIÓN -->
         @include('partials.create-post')
         
+        <!-- MUESTRA ERRORES DE VALIDACIÓN (NUEVO: AGREGADO AQUÍ) -->
+        @if ($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-pill mb-4" role="alert">
+            <ul class="mb-0 list-unstyled small">
+                @foreach ($errors->all() as $error)
+                    <li><i class="fas fa-exclamation-triangle me-2"></i>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+
         <!-- Alertas de Feedback -->
         @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-pill mb-4" role="alert">
@@ -60,14 +72,15 @@
         </div>
         @endforelse
         
-        <!-- SECCIÓN DE PAGINACIÓN ELIMINADA -->
-        
     </div>
 
-    <!-- COLUMNA DERECHA: Eventos y Amigos -->
+    <!-- COLUMNA DERECHA: Chat, Eventos y Amigos -->
     <div class="col-md-3">
+        <!-- WIDGET DE CHAT -->
+        @include('partials.chat-widget')
+
         @include('partials.upcoming-events')
         @include('partials.online-friends')
     </div>
 </div>
-@endsection 
+@endsection

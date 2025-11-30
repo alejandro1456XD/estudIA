@@ -9,7 +9,8 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ResourceController;
-use App\Http\Controllers\EventController; // <--- NUEVO IMPORTANTE: Importar el controlador
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\ChatController; // <--- AGREGADO
 
 /*
 |--------------------------------------------------------------------------
@@ -58,6 +59,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/remove-friend/{user}', [FriendController::class, 'removeFriend'])->name('friends.remove');
     });
 
+    // --- CHAT (NUEVO) ---
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');          // Lista de chats
+        Route::post('/private', [ChatController::class, 'storePrivate'])->name('private'); // Crear chat privado
+        Route::post('/group', [ChatController::class, 'storeGroup'])->name('group');       // Crear grupo
+        Route::get('/{id}', [ChatController::class, 'show'])->name('show');        // Ver conversación
+        Route::post('/{id}/send', [ChatController::class, 'sendMessage'])->name('send');   // Enviar mensaje
+    });
+
     // --- GRUPOS ---
     Route::prefix('groups')->group(function () {
         Route::get('/', [GroupController::class, 'index'])->name('groups');
@@ -83,14 +93,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
     Route::post('/resources/{resource}/rate', [ResourceController::class, 'rate'])->name('resources.rate');
 
-    // --- EVENTOS (NUEVO) ---
-    // 1. Ver calendario y crear
+    // --- EVENTOS ---
     Route::get('/events', [EventController::class, 'index'])->name('events');
-    // 2. Ver mis eventos
     Route::get('/events/my', [EventController::class, 'myEvents'])->name('events.my');
-    // 3. Crear evento
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
-    // 4. Asistir/Cancelar (Toggle)
     Route::post('/events/{event}/attend', [EventController::class, 'toggleAttendance'])->name('events.attend');
 
     // --- AULA VIRTUAL ---
