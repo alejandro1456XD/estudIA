@@ -8,17 +8,16 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
     /**
-     * Muestra la lista de conversaciones del usuario.
+     * Muestra la lista de conversaciones.
      */
     public function index()
     {
         $user = Auth::user();
-        
-        // Obtenemos las conversaciones ordenadas por la última actualización (mensaje más reciente)
         $conversations = $user->conversations()
             ->with(['lastMessage', 'participants'])
             ->orderByDesc('updated_at')
@@ -28,149 +27,226 @@ class ChatController extends Controller
     }
 
     /**
-     * Muestra una conversación específica y sus mensajes.
+     * Muestra una conversación específica.
      */
     public function show($id)
     {
         $conversation = Conversation::with(['messages.user', 'participants'])->findOrFail($id);
 
-        // Seguridad: Verificar que el usuario pertenece a esta conversación
         if (!$conversation->participants->contains(Auth::id())) {
             abort(403, 'No tienes permiso para ver este chat.');
         }
 
-        // Marcar como leído (actualizar pivot)
-        $conversation->participants()->updateExistingPivot(Auth::id(), [
-            'last_read_at' => now()
-        ]);
+        // Marcar como leído
+        $conversation->participants()->updateExistingPivot(Auth::id(), ['last_read_at' => now()]);
 
         return view('chat.show', compact('conversation'));
     }
 
     /**
-     * Inicia o recupera un chat privado con un amigo.
+     * Crea o recupera un chat privado.
      */
     public function storePrivate(Request $request)
     {
-        $request->validate([
-            'recipient_id' => 'required|exists:users,id'
-        ]);
-
+        $request->validate(['recipient_id' => 'required|exists:users,id']);
         $me = Auth::user();
         $recipientId = $request->recipient_id;
 
-        // 1. Verificar si son amigos
-        // Usamos el helper que definimos en User (o verificamos las relaciones manualmente)
-        $isFriend = $me->friends()->where('friend_id', $recipientId)->exists() || 
-                    $me->friendsReceived()->where('user_id', $recipientId)->exists();
-
-        if (!$isFriend) {
-            return back()->with('error', 'Solo puedes iniciar chats con amigos.');
-        }
-
-        // 2. Verificar si ya existe una conversación privada entre estos dos
-        // Buscamos una conversación que NO sea grupo y tenga exactamente estos 2 participantes
+        // Buscar si ya existe chat privado
         $conversation = Conversation::where('is_group', false)
-            ->whereHas('participants', function ($q) use ($me) {
-                $q->where('user_id', $me->id);
-            })
-            ->whereHas('participants', function ($q) use ($recipientId) {
-                $q->where('user_id', $recipientId);
-            })
+            ->whereHas('participants', function ($q) use ($me) { $q->where('user_id', $me->id); })
+            ->whereHas('participants', function ($q) use ($recipientId) { $q->where('user_id', $recipientId); })
             ->first();
 
-        // 3. Si no existe, la creamos
         if (!$conversation) {
-            DB::transaction(function () use (&$conversation, $me, $recipientId) {
-                $conversation = Conversation::create([
-                    'is_group' => false,
-                ]);
-
-                $conversation->participants()->attach([$me->id, $recipientId]);
-            });
+            $conversation = Conversation::create(['is_group' => false]);
+            $conversation->participants()->attach([$me->id, $recipientId]);
         }
 
         return redirect()->route('chat.show', $conversation->id);
     }
 
     /**
-     * Crea un nuevo grupo de chat con varios amigos.
+     * Crea un nuevo grupo.
      */
     public function storeGroup(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'users' => 'required|array|min:1', // IDs de los amigos a agregar
+            'users' => 'required|array|min:1',
             'users.*' => 'exists:users,id'
         ]);
 
         $me = Auth::user();
-        $friendIds = $request->users;
 
-        // 1. Validar que TODOS los usuarios seleccionados sean amigos
-        // (Esta validación es opcional pero recomendada para consistencia estricta)
-        foreach ($friendIds as $friendId) {
-            $isFriend = $me->friends()->where('friend_id', $friendId)->exists() || 
-                        $me->friendsReceived()->where('user_id', $friendId)->exists();
-            
-            if (!$isFriend) {
-                return back()->with('error', 'Uno de los usuarios seleccionados no es tu amigo.');
-            }
-        }
-
-        // 2. Crear el grupo
-        $conversation = DB::transaction(function () use ($request, $me, $friendIds) {
+        $conversation = DB::transaction(function () use ($request, $me) {
             $group = Conversation::create([
                 'name' => $request->name,
                 'is_group' => true,
-                'admin_id' => $me->id,
-                'icon' => null // Podrías agregar subida de imagen aquí
+                'admin_id' => $me->id, // El creador original
             ]);
 
-            // Agregar al creador y a los amigos seleccionados
-            $participants = array_merge([$me->id], $friendIds);
-            $group->participants()->attach($participants);
+            // El creador se agrega como admin (is_admin = true)
+            $group->participants()->attach($me->id, ['is_admin' => true]);
+            
+            // Los demás se agregan como miembros normales (is_admin = false)
+            $group->participants()->attach($request->users, ['is_admin' => false]);
 
             return $group;
         });
 
-        return redirect()->route('chat.show', $conversation->id)->with('success', 'Grupo creado exitosamente.');
+        return redirect()->route('chat.show', $conversation->id);
     }
 
     /**
-     * Envía un mensaje a una conversación.
+     * Envía un mensaje.
      */
     public function sendMessage(Request $request, $id)
     {
         $conversation = Conversation::findOrFail($id);
-
-        // Seguridad: Verificar pertenencia
-        if (!$conversation->participants->contains(Auth::id())) {
-            abort(403, 'No perteneces a este chat.');
-        }
+        if (!$conversation->participants->contains(Auth::id())) abort(403);
 
         $request->validate([
             'body' => 'required_without:attachment|string',
-            'attachment' => 'nullable|file|max:10240' // Max 10MB
+            'attachment' => 'nullable|file|max:10240'
         ]);
 
-        $attachmentPath = null;
-        if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('chat_attachments', 'public');
-        }
+        $path = $request->hasFile('attachment') ? $request->file('attachment')->store('chat_attachments', 'public') : null;
 
-        // Crear el mensaje
         Message::create([
             'conversation_id' => $conversation->id,
             'user_id' => Auth::id(),
             'body' => $request->body,
-            'attachment' => $attachmentPath,
-            'type' => $attachmentPath ? 'file' : 'text',
+            'attachment' => $path,
+            'type' => $path ? 'file' : 'text',
         ]);
 
-        // Actualizar el timestamp de la conversación para que suba en la lista
-        $conversation->touch();
+        $conversation->touch(); // Actualiza 'updated_at' para subirlo en la lista
+        return back();
+    }
 
-        return redirect()->route('chat.show', $conversation->id);
+    // ==========================================
+    // NUEVAS FUNCIONES DE GESTIÓN DE GRUPO
+    // ==========================================
+
+    /**
+     * Salir del grupo.
+     */
+    public function leaveGroup($id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        
+        // REGLA: El creador original NO puede abandonar el grupo (debe eliminarlo o transferirlo)
+        if ($conversation->admin_id == Auth::id()) {
+            return back()->with('error', 'Como creador, no puedes salir. Debes eliminar el grupo si ya no lo quieres.');
+        }
+
+        $conversation->participants()->detach(Auth::id());
+        
+        // CORRECCIÓN: Redirigir al HOME en lugar de chat.index
+        return redirect()->route('home')->with('success', 'Has salido del grupo.');
+    }
+
+    /**
+     * Eliminar grupo (Solo Creador).
+     */
+    public function deleteGroup($id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        
+        // REGLA: SOLO el creador original puede eliminar
+        if ($conversation->admin_id != Auth::id()) {
+            abort(403, 'Solo el creador puede eliminar el grupo.');
+        }
+
+        $conversation->delete(); 
+        
+        // CORRECCIÓN: Redirigir al HOME en lugar de chat.index
+        return redirect()->route('home')->with('success', 'Grupo eliminado permanentemente.');
+    }
+
+    /**
+     * Cambiar foto del grupo (Admins).
+     */
+    public function updatePhoto(Request $request, $id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorizeAdminAction($conversation); // Verifica permisos
+
+        $request->validate(['icon' => 'required|image|max:2048']);
+        
+        $path = $request->file('icon')->store('group_icons', 'public');
+        $conversation->update(['icon' => $path]);
+
+        return back()->with('success', 'Foto de grupo actualizada.');
+    }
+
+    /**
+     * Añadir nuevos miembros (Admins).
+     */
+    public function addMembers(Request $request, $id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorizeAdminAction($conversation);
+
+        $request->validate(['users' => 'required|array', 'users.*' => 'exists:users,id']);
+
+        // Filtrar usuarios que ya están para no duplicar
+        $currentParticipantIds = $conversation->participants->pluck('id')->toArray();
+        $newUsers = array_diff($request->users, $currentParticipantIds);
+        
+        if (!empty($newUsers)) {
+            $conversation->participants()->attach($newUsers, ['is_admin' => false]);
+        }
+
+        return back()->with('success', 'Nuevos miembros añadidos.');
+    }
+
+    /**
+     * Designar a un miembro como administrador (Admins).
+     */
+    public function makeAdmin(Request $request, $id, $userId)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorizeAdminAction($conversation);
+
+        // Actualizar la tabla pivot para hacer admin a este usuario
+        $conversation->participants()->updateExistingPivot($userId, ['is_admin' => true]);
+
+        return back()->with('success', 'Usuario ascendido a administrador.');
+    }
+
+    /**
+     * Expulsar a un miembro (Admins).
+     */
+    public function removeMember(Request $request, $id, $userId)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorizeAdminAction($conversation);
+
+        // REGLA: No puedes expulsar al creador original
+        if ($userId == $conversation->admin_id) {
+            return back()->with('error', 'No puedes expulsar al creador del grupo.');
+        }
+
+        $conversation->participants()->detach($userId);
+        return back()->with('success', 'Usuario eliminado del grupo.');
+    }
+
+    /**
+     * Helper privado para verificar si el usuario actual tiene poder de admin en este grupo.
+     * Es admin si: Es el Creador (admin_id) O tiene el flag is_admin en la tabla pivot.
+     */
+    private function authorizeAdminAction($conversation)
+    {
+        $me = Auth::user();
+        $participant = $conversation->participants()->where('user_id', $me->id)->first();
+        
+        $isCreator = ($conversation->admin_id == $me->id);
+        $isDesignatedAdmin = ($participant && $participant->pivot->is_admin);
+
+        if (!$isCreator && !$isDesignatedAdmin) {
+            abort(403, 'No tienes permisos de administrador en este grupo.');
+        }
     }
 }

@@ -10,7 +10,7 @@ use App\Http\Controllers\FriendController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\ChatController; // <--- AGREGADO
+use App\Http\Controllers\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,16 +59,25 @@ Route::middleware('auth')->group(function () {
         Route::post('/remove-friend/{user}', [FriendController::class, 'removeFriend'])->name('friends.remove');
     });
 
-    // --- CHAT (NUEVO) ---
+    // --- CHAT Y GESTIÓN DE GRUPOS (ACTUALIZADO) ---
     Route::prefix('chat')->name('chat.')->group(function () {
-        Route::get('/', [ChatController::class, 'index'])->name('index');          // Lista de chats
-        Route::post('/private', [ChatController::class, 'storePrivate'])->name('private'); // Crear chat privado
-        Route::post('/group', [ChatController::class, 'storeGroup'])->name('group');       // Crear grupo
-        Route::get('/{id}', [ChatController::class, 'show'])->name('show');        // Ver conversación
-        Route::post('/{id}/send', [ChatController::class, 'sendMessage'])->name('send');   // Enviar mensaje
+        // Rutas básicas
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::post('/private', [ChatController::class, 'storePrivate'])->name('private');
+        Route::post('/group', [ChatController::class, 'storeGroup'])->name('group');
+        Route::get('/{id}', [ChatController::class, 'show'])->name('show');
+        Route::post('/{id}/send', [ChatController::class, 'sendMessage'])->name('send');
+
+        // NUEVAS RUTAS DE GESTIÓN
+        Route::post('/{id}/leave', [ChatController::class, 'leaveGroup'])->name('leave');
+        Route::delete('/{id}/delete', [ChatController::class, 'deleteGroup'])->name('delete');
+        Route::post('/{id}/photo', [ChatController::class, 'updatePhoto'])->name('photo');
+        Route::post('/{id}/add-members', [ChatController::class, 'addMembers'])->name('addMembers');
+        Route::post('/{id}/make-admin/{user}', [ChatController::class, 'makeAdmin'])->name('makeAdmin');
+        Route::post('/{id}/remove-member/{user}', [ChatController::class, 'removeMember'])->name('removeMember');
     });
 
-    // --- GRUPOS ---
+    // --- GRUPOS (ESTUDIO) ---
     Route::prefix('groups')->group(function () {
         Route::get('/', [GroupController::class, 'index'])->name('groups');
         Route::post('/', [GroupController::class, 'store'])->name('groups.store');

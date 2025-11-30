@@ -44,7 +44,7 @@
                             <i class="fas fa-user me-1"></i>Amigos
                         </button>
                     </li>
-                    <!-- Pestaña 2: Mis Grupos (NUEVO) -->
+                    <!-- Pestaña 2: Mis Grupos -->
                     <li class="nav-item flex-fill text-center" role="presentation">
                         <button class="nav-link fw-bold w-100" id="mygroups-tab" data-bs-toggle="tab" data-bs-target="#mygroups-content" type="button" role="tab">
                             <i class="fas fa-users me-1"></i>Mis Grupos
@@ -96,21 +96,18 @@
                         </div>
                     </div>
 
-                    <!-- VISTA 2: MIS GRUPOS (NUEVO) -->
+                    <!-- VISTA 2: MIS GRUPOS (ACTUALIZADO CON FOTOS) -->
                     <div class="tab-pane fade" id="mygroups-content" role="tabpanel">
                         <div class="list-group list-group-flush overflow-auto custom-scroll" style="max-height: 300px;">
                             @php
-                                // Filtramos solo las conversaciones que son grupos
                                 $myGroups = auth()->user()->conversations->where('is_group', true);
                             @endphp
 
                             @forelse($myGroups as $group)
                                 <a href="{{ route('chat.show', $group->id) }}" class="list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center p-2">
                                     <div class="position-relative me-3">
-                                        <!-- Icono de Grupo -->
-                                        <div class="rounded-circle bg-indigo-100 text-indigo-600 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #e0e7ff; color: #4f46e5;">
-                                            <i class="fas fa-users"></i>
-                                        </div>
+                                        <!-- AQUI ESTÁ EL CAMBIO: Usamos la imagen real del grupo -->
+                                        <img src="{{ $group->image }}" class="rounded-circle object-fit-cover shadow-sm" width="40" height="40" alt="Grupo">
                                     </div>
                                     <div class="flex-grow-1 text-start">
                                         <h6 class="mb-0 fw-bold text-dark">{{ $group->title }}</h6>
