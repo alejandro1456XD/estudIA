@@ -13,9 +13,18 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone', 
         'password',
         'bio',
-        'profile_photo_path'
+        'profile_photo_path',
+        
+        
+        'coins',
+        'pet_type',
+        'pet_level',
+        'pet_xp',
+        'pet_xp_next_level',
+        'pet_name'
     ];
 
     protected $hidden = [
@@ -31,21 +40,26 @@ class User extends Authenticatable
         ];
     }
 
-    // --- RELACIONES DE CHAT (NUEVO) ---
+    
 
     public function conversations()
     {
-        // Asegúrate de tener el modelo Conversation creado en App\Models
         return $this->belongsToMany(Conversation::class, 'conversation_user')
                     ->withPivot('last_read_at')
                     ->withTimestamps();
     }
 
-    // --- RELACIONES GENERALES ---
+    
 
     public function posts()
     {
         return $this->hasMany(Post::class);
+    }
+    
+    
+    public function tests()
+    {
+        return $this->hasMany(Test::class);
     }
 
     public function comments()
@@ -59,9 +73,9 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
-    // --- RELACIONES DE AMISTAD ---
+  
 
-    // 1. Amigos que YO agregué
+   
     public function friends()
     {
         return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
@@ -69,7 +83,7 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
-    // 2. Amigos que ME agregaron
+   
     public function friendsReceived()
     {
         return $this->belongsToMany(User::class, 'friendships', 'friend_id', 'user_id')
@@ -84,13 +98,13 @@ class User extends Authenticatable
                     ->with('user');
     }
 
-    // ATAJO: Todos mis amigos
+    
     public function getAllFriendsAttribute()
     {
         return $this->friends->merge($this->friendsReceived);
     }
 
-    // --- RELACIONES DE CURSOS ---
+    
 
     public function coursesCreated()
     {
@@ -104,53 +118,53 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
-    // --- RELACIONES DE GRUPOS ---
+   
 
-    // Grupos que he CREADO (soy el admin)
+    
     public function administeredGroups()
     {
         return $this->hasMany(Group::class, 'admin_id');
     }
 
-    // Grupos a los que pertenezco (soy miembro)
+    
     public function groups()
     {
         return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id')
-                    ->withPivot('role') // Acceder al rol (admin, member)
+                    ->withPivot('role') 
                     ->withTimestamps();
     }
 
-    // Mensajes que he enviado en grupos
+   
     public function groupMessages()
     {
         return $this->hasMany(GroupMessage::class);
     }
 
-    // --- RELACIONES DE EVENTOS ---
     
-    // Eventos a los que el usuario asistirá
+    
+   
     public function attendingEvents()
     {
         return $this->belongsToMany(Event::class, 'event_attendees')
                     ->withTimestamps();
     }
 
-    // --- MÉTODOS ÚTILES PARA GRUPOS ---
+   
 
-    // Verificar si el usuario es miembro de un grupo específico
+    
     public function isMemberOfGroup($groupId)
     {
         return $this->groups()->where('group_id', $groupId)->exists();
     }
 
-    // Verificar si el usuario es administrador de un grupo específico
+    
     public function isAdminOfGroup($groupId)
     {
         return $this->administeredGroups()->where('id', $groupId)->exists() || 
                $this->groups()->where('group_id', $groupId)->where('role', 'admin')->exists();
     }
 
-    // Obtener el rol del usuario en un grupo específico
+    
     public function getRoleInGroup($groupId)
     {
         $group = $this->groups()->where('group_id', $groupId)->first();
@@ -162,7 +176,7 @@ class User extends Authenticatable
         return $group ? $group->pivot->role : null;
     }
 
-    // Grupos públicos a los que no pertenezco (para descubrir)
+    
     public function getDiscoverableGroupsAttribute()
     {
         return Group::whereDoesntHave('users', function($query) {
@@ -170,48 +184,68 @@ class User extends Authenticatable
         })->public()->get();
     }
 
-    // Contador de grupos a los que pertenezco
+    
     public function getGroupsCountAttribute()
     {
         return $this->groups()->count();
     }
 
-    // Contador de mensajes en grupos
+    
     public function getGroupMessagesCountAttribute()
     {
         return $this->groupMessages()->count();
     }
 
-    // Grupos recientes (últimos 5 grupos unidos)
+   
     public function getRecentGroupsAttribute()
     {
         return $this->groups()->latest('group_user.created_at')->take(5)->get();
     }
 
-    // --- MÉTODOS DE PERFIL ---
+    
 
-    // Obtener la URL de la foto de perfil
+    
     public function getProfilePictureAttribute()
     {
         return $this->profile_photo_path ? asset('storage/' . $this->profile_photo_path) : '/default-avatar.png';
     }
 
-    // Verificar si el usuario tiene foto de perfil
+    
     public function hasProfilePicture()
     {
         return !is_null($this->profile_photo_path);
     }
 
-    // --- SCOPES ÚTILES ---
+ 
 
-    // Scope para buscar usuarios por nombre o email
+    public function items()
+    {
+        return $this->hasMany(\App\Models\UserItem::class);
+    }
+
+   
+    public function equippedItem($category)
+    {
+        return $this->items()
+            ->where('is_equipped', true)
+            ->whereHas('item', function($query) use ($category) {
+                $query->where('category', $category);
+            })
+            ->with('item')
+            ->first()
+            ?->item;
+    }
+
+    
+
+   
     public function scopeSearch($query, $search)
     {
         return $query->where('name', 'like', "%{$search}%")
-                     ->orWhere('email', 'like', "%{$search}%");
+                      ->orWhere('email', 'like', "%{$search}%");
     }
 
-    // Scope para usuarios que no son amigos
+    
     public function scopeNotFriendsWith($query, $userId)
     {
         return $query->whereDoesntHave('friends', function($q) use ($userId) {

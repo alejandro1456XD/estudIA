@@ -8,32 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('courses', function (Blueprint $table) {
+        Schema::create('tests', function (Blueprint $table) {
             $table->id();
-            
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             
             $table->string('name');
-            $table->string('category');
-            $table->string('language');
-            $table->string('level');
-            $table->text('description')->nullable();
             
-            $table->string('type')->default('recorded');
-            $table->json('schedule')->nullable();
             
-            $table->boolean('is_published')->default(true);
+            $table->longText('source_content')->nullable(); 
             
            
-            $table->boolean('is_live_now')->default(false); 
+            $table->text('prompt_input')->nullable(); 
             
-
+        
+            $table->json('quiz_structure')->nullable(); 
+            
+            
+            $table->enum('status', ['pending', 'generated', 'failed', 'completed'])->default('pending');
+            
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('courses');
+        Schema::dropIfExists('tests');
     }
 };

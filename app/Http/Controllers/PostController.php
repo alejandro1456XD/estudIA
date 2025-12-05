@@ -3,19 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Services\GamificationService; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class PostController extends Controller
 {
-    public function store(Request $request)
+    
+    public function store(Request $request, GamificationService $gamification) 
     {
         // 1. VALIDACIÓN
         $validator = Validator::make($request->all(), [
             'content' => 'nullable|string|max:5000|required_without:file',
-            'type' => 'required|in:photo,document,question', // Sin video
+            'type' => 'required|in:photo,document,question', 
             'file' => 'nullable|file|max:10240', // 10MB limit
         ]);
 
@@ -27,14 +30,11 @@ class PostController extends Controller
         $post = new Post();
         $post->user_id = Auth::id();
         
-        // --- AQUÍ ESTÁ EL ARREGLO ---
-        // Usamos el operador '??' para decir: "Si content es null, usa una cadena vacía ''"
-        $post->content = $request->content ?? ''; 
         
-        // Inicialmente usamos el tipo que envió el formulario
+        $post->content = $request->content ?? ''; 
         $post->type = $request->type;
 
-        // 2. MANEJO DE ARCHIVOS
+        
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             
@@ -44,12 +44,12 @@ class PostController extends Controller
 
             $mime = $file->getMimeType();
             
-            // Bloqueamos videos por ahora
+            // Bloqueo de videos
             if (str_starts_with($mime, 'video/')) {
                 return redirect()->back()->with('error', 'La subida de videos está deshabilitada temporalmente.');
             }
             
-            // Auto-detectar tipo
+            // Auto-detectar tipo y carpeta
             if (str_starts_with($mime, 'image/')) {
                 $post->type = 'photo';
                 $folder = 'posts/images';
@@ -67,9 +67,17 @@ class PostController extends Controller
 
         $post->save();
 
+        
+        try {
+            $gamification->earn(Auth::user(), 'create_post');
+        } catch (\Exception $e) {
+            Log::error("Error entregando monedas al crear post: " . $e->getMessage());
+        }
+
         return redirect()->route('home')->with('success', 'Publicación creada exitosamente');
     }
 
+   
     public function like($id)
     {
         $post = Post::findOrFail($id);
@@ -90,6 +98,7 @@ class PostController extends Controller
         ]);
     }
 
+    
     public function destroy($id)
     {
         $post = Post::findOrFail($id);

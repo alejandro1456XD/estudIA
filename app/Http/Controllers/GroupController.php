@@ -38,7 +38,7 @@ class GroupController extends Controller
         // Verificar si el usuario actual es admin del grupo
         $isAdmin = $group->admin_id === $user->id;
 
-        // Cargar mensajes: ordenamos por created_at DESC (el más nuevo primero)
+        // Cargar mensajes
         $messages = $group->messages()
                           ->with('user')
                           ->orderBy('created_at', 'desc')
@@ -50,10 +50,10 @@ class GroupController extends Controller
 
     public function storeMessage(Request $request, Group $group)
     {
-        // 1. Validación
+        
         $request->validate([
             'content' => 'nullable|string',
-            'file'    => 'nullable|file|max:20480', // Max 20MB
+            'file'    => 'nullable|file|max:20480', 
         ]);
 
         if (empty($request->content) && !$request->hasFile('file')) {
@@ -65,12 +65,12 @@ class GroupController extends Controller
         $message->user_id = Auth::id();
         $message->content = $request->content;
 
-        // 2. Manejo y Detección de Archivos
+        
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $mime = $file->getMimeType();
 
-            // Detección de tipo robusta
+            
             if (str_starts_with($mime, 'image/')) {
                 $folder = 'group_media/images';
                 $message->type = 'image';
@@ -134,7 +134,7 @@ class GroupController extends Controller
     // --- MÉTODO UPDATE PARA EDITAR GRUPO ---
     public function update(Request $request, Group $group)
     {
-        // Verificar que el usuario sea el administrador del grupo
+        
         if ($group->admin_id !== Auth::id()) {
             return back()->with('error', 'No tienes permisos para editar este grupo.');
         }
@@ -145,8 +145,8 @@ class GroupController extends Controller
             'description' => 'nullable|string',
             'category' => 'nullable|string|max:100',
             'is_private' => 'boolean',
-            'group_photo' => 'nullable|image|max:5120', // 5MB
-            'cover_photo' => 'nullable|image|max:10240', // 10MB
+            'group_photo' => 'nullable|image|max:5120', 
+            'cover_photo' => 'nullable|image|max:10240', 
         ]);
 
         // Actualizar datos básicos
@@ -191,7 +191,7 @@ class GroupController extends Controller
     {
         $user = Auth::user();
         
-        // Verificar permisos: admin o el propio usuario que creó el mensaje
+        // Verificar permisos
         if ($group->admin_id !== $user->id && $message->user_id !== $user->id) {
             return back()->with('error', 'No tienes permisos para eliminar este mensaje.');
         }
@@ -210,17 +210,17 @@ class GroupController extends Controller
     {
         $currentUser = Auth::user();
 
-        // Solo el admin puede expulsar miembros
+        
         if ($group->admin_id !== $currentUser->id) {
             return back()->with('error', 'No tienes permisos para expulsar miembros.');
         }
 
-        // No permitir expulsarse a sí mismo
+        
         if ($user->id === $currentUser->id) {
             return back()->with('error', 'No puedes expulsarte a ti mismo.');
         }
 
-        // Expulsar al miembro
+        
         $group->members()->detach($user->id);
 
         return back()->with('success', "Miembro {$user->name} expulsado correctamente.");

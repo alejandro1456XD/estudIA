@@ -11,6 +11,9 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\PetController;
+use App\Http\Controllers\ShopController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +31,47 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 /*
 |--------------------------------------------------------------------------
+| RUTAS DE DIAGNÓSTICO (ACCESO PÚBLICO TEMPORAL)
+|--------------------------------------------------------------------------
+*/
+
+// 1. Ver qué modelos de IA tienes disponibles
+Route::get('/debug-models', function () {
+    $apiKey = env('GEMINI_API_KEY');
+    
+    try {
+        $response = Illuminate\Support\Facades\Http::withoutVerifying()
+            ->get("https://generativelanguage.googleapis.com/v1beta/models?key={$apiKey}");
+
+        if ($response->failed()) {
+            return [
+                "estado" => "❌ ERROR DE CONEXIÓN",
+                "error" => $response->json()
+            ];
+        }
+
+        $models = $response->json()['models'] ?? [];
+        $generateModels = array_filter($models, function($m) {
+            return in_array('generateContent', $m['supportedGenerationMethods']);
+        });
+
+        return [
+            "estado" => "✅ CONEXIÓN EXITOSA",
+            "mensaje" => "Copia uno de estos nombres en tu GeminiService.php:",
+            "modelos_disponibles" => array_values(array_column($generateModels, 'name'))
+        ];
+    } catch (\Exception $e) {
+        return ["error" => $e->getMessage()];
+    }
+});
+
+// 2. Ver configuración de PHP
+Route::get('/info-php', function () {
+    phpinfo();
+});
+
+/*
+|--------------------------------------------------------------------------
 | RUTAS PROTEGIDAS (Usuarios Autenticados)
 |--------------------------------------------------------------------------
 */
@@ -36,7 +80,7 @@ Route::middleware('auth')->group(function () {
     // --- INICIO ---
     Route::get('/', [HomeController::class, 'index'])->name('home');
 
-    // --- PUBLICACIONES (POSTS) ---
+    // --- PUBLICACIONES ---
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::post('/posts/{id}/like', [PostController::class, 'like'])->name('posts.like');
     Route::delete('/posts/{id}', [PostController::class, 'destroy'])->name('posts.destroy');
@@ -59,16 +103,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/remove-friend/{user}', [FriendController::class, 'removeFriend'])->name('friends.remove');
     });
 
-    // --- CHAT Y GESTIÓN DE GRUPOS ---
+    // --- CHAT ---
     Route::prefix('chat')->name('chat.')->group(function () {
-        // Rutas básicas
         Route::get('/', [ChatController::class, 'index'])->name('index');
         Route::post('/private', [ChatController::class, 'storePrivate'])->name('private');
         Route::post('/group', [ChatController::class, 'storeGroup'])->name('group');
         Route::get('/{id}', [ChatController::class, 'show'])->name('show');
         Route::post('/{id}/send', [ChatController::class, 'sendMessage'])->name('send');
-
-        // Rutas de gestión
         Route::post('/{id}/leave', [ChatController::class, 'leaveGroup'])->name('leave');
         Route::delete('/{id}/delete', [ChatController::class, 'deleteGroup'])->name('delete');
         Route::post('/{id}/photo', [ChatController::class, 'updatePhoto'])->name('photo');
@@ -108,11 +149,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/events', [EventController::class, 'store'])->name('events.store');
     Route::post('/events/{event}/attend', [EventController::class, 'toggleAttendance'])->name('events.attend');
 
-    // --- AULA VIRTUAL (ACTUALIZADA) ---
-    // Busca el curso en la BD para pasar sus datos a la vista (necesario para conectar con el profesor)
+    // --- IA / EXÁMENES ---
+    Route::resource('tests', TestController::class);
+    Route::post('/tests/{test}/submit', [TestController::class, 'submit'])->name('tests.submit');
+
+    // --- AULA VIRTUAL ---
     Route::get('/classroom/{id}', function ($id) {
         $course = \App\Models\Course::findOrFail($id);
         return view('virtual-classroom', compact('course'));
     })->name('classroom');
+
+    // --- GAMIFICACIÓN / MASCOTA ---
+    Route::post('/pet/select', [PetController::class, 'select'])->name('pet.select');
+    Route::post('/pet/rename', [PetController::class, 'rename'])->name('pet.rename'); // <--- ESTA FALTABA
+
+    // --- TIENDA DE MASCOTAS E INVENTARIO ---
+    Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+    Route::post('/shop/buy/{id}', [ShopController::class, 'buy'])->name('shop.buy');
+    Route::get('/shop/inventory', [ShopController::class, 'inventory'])->name('shop.inventory');
+    Route::post('/shop/equip/{id}', [ShopController::class, 'toggleEquip'])->name('shop.equip');
 
 });

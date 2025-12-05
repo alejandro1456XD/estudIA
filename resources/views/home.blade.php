@@ -76,6 +76,11 @@
 
     <!-- COLUMNA DERECHA: Chat, Eventos y Amigos -->
     <div class="col-md-3">
+        
+        <!-- WIDGET DE MASCOTA (NUEVO) -->
+        <!-- Aquí aparecerá tu compañero o la opción para elegirlo -->
+        @include('partials.pet-widget')
+
         <!-- WIDGET DE CHAT -->
         @include('partials.chat-widget')
 

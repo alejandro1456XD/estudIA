@@ -1,21 +1,74 @@
-/* Variables de colores */
+/* =========================================
+   1. VARIABLES GLOBALES (MODO CLARO - DEFAULT)
+   ========================================= */
 :root {
     --primary-color: #1877f2;
     --secondary-color: #42b72a;
     --accent-color: #ff6b6b;
     --warning-color: #ffd700;
     --dark-color: #1c1e21;
-    --light-color: #f0f2f5;
+    --light-color: #f0f2f5; /* Fondo gris claro */
     --text-dark: #1c1e21;
     --text-light: #65676b;
     --white: #ffffff;
+    --card-bg: #ffffff;      /* Nueva variable para fondos de tarjetas */
+    --input-bg: #f0f2f5;     /* Nueva variable para inputs */
 }
 
-/* Estilos generales */
+/* =========================================
+   2. VARIABLES Y AJUSTES MODO OSCURO
+   ========================================= */
+[data-bs-theme="dark"] {
+    /* Redefinimos variables para el modo oscuro */
+    --light-color: #18191a;  /* Fondo Body Oscuro */
+    --text-dark: #e4e6eb;    /* Texto Principal Claro */
+    --text-light: #b0b3b8;   /* Texto Secundario Gris */
+    --card-bg: #242526;      /* Fondo de tarjetas (Gris oscuro) */
+    --white: #242526;        /* Reemplazamos blanco por gris oscuro en fondos */
+    --input-bg: #3a3b3c;     /* Inputs más claros que el fondo */
+    
+    /* Ajuste de scrollbar para que se vea oscuro */
+    color-scheme: dark;
+}
+
+/* Forzar estilos oscuros en elementos específicos cuando está activo el tema */
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--card-bg) !important;
+    color: var(--text-dark) !important;
+}
+
+[data-bs-theme="dark"] .form-control {
+    background-color: var(--input-bg);
+    border-color: #3e4042;
+    color: var(--text-dark);
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: var(--text-light);
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: var(--card-bg);
+    border-color: #3e4042;
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: var(--text-dark);
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+    background-color: var(--input-bg);
+}
+
+/* =========================================
+   3. ESTILOS GENERALES
+   ========================================= */
 body {
     background-color: var(--light-color);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-dark);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Navbar */
@@ -30,7 +83,7 @@ body {
 }
 
 .nav-link {
-    color: var(--white) !important;
+    color: #ffffff !important; /* Mantenemos blanco en navbar siempre */
     transition: color 0.3s;
 }
 
@@ -44,9 +97,16 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     border: none;
-    background: var(--white);
+    
+    /* Usamos la variable --card-bg en lugar de --white directo */
+    background: var(--card-bg); 
+    color: var(--text-dark);
+    
+    /* Transición suave al cambiar de tema */
+    transition: background-color 0.3s ease, color 0.3s ease; 
 }
 
+/* Sidebar */
 .sidebar {
     position: sticky;
     top: 20px;
@@ -61,14 +121,18 @@ body {
 .btn-outline-primary:hover {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
+    color: #fff;
 }
 
 /* Footer */
 footer {
-    background-color: var(--dark-color) !important;
+    background-color: #1c1e21 !important; /* Footer siempre oscuro */
+    color: #b0b3b8;
 }
 
-/* Responsive */
+/* =========================================
+   4. RESPONSIVE Y UTILIDADES
+   ========================================= */
 @media (max-width: 991.98px) {
     .navbar-collapse {
         margin-top: 10px;

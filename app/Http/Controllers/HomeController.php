@@ -31,13 +31,13 @@ class HomeController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 1. GESTIONAR
+        
         $myCreatedCourses = Course::where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
         
-        // 2. APRENDIENDO
+        
         $enrolledCourses = $user->enrolledCourses;
 
-        // 3. EXPLORAR
+        
         $availableCourses = Course::where('user_id', '!=', $user->id)
             ->whereDoesntHave('students', function($query) use ($user) {
                 $query->where('user_id', $user->id);
@@ -51,7 +51,7 @@ class HomeController extends Controller
     public function events() { return view('events'); }
     public function resources() { return view('resources'); }
 
-    // Guardar nuevo curso
+    
     public function storeCourse(Request $request)
     {
         $request->validate([
@@ -84,7 +84,7 @@ class HomeController extends Controller
         return back()->with('success', '¡Curso "' . $request->name . '" creado exitosamente!');
     }
 
-    // Inscribirse a un curso
+   
     public function enroll(Course $course)
     {
         /** @var \App\Models\User $user */
@@ -103,7 +103,7 @@ class HomeController extends Controller
         return back()->with('success', '¡Inscripción exitosa! Ahora puedes ver el curso en la pestaña "Mis Cursos".');
     }
 
-    // Activar/Desactivar clase en vivo
+   
     public function toggleLive(Course $course)
     {
         if ($course->user_id !== Auth::id()) {

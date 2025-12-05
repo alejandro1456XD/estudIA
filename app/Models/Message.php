@@ -18,13 +18,13 @@ class Message extends Model
         'is_read'
     ];
 
-    // Relación: Chat al que pertenece
+    
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);
     }
 
-    // Relación: Usuario que lo envió
+   
     public function user()
     {
         return $this->belongsTo(User::class);

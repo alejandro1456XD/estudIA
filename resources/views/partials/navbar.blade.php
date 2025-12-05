@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm transition-colors duration-300" id="mainNavbar">
     <div class="container">
         
         <a class="navbar-brand" href="{{ route('home') }}">
@@ -43,10 +43,16 @@
 
             
             <div class="navbar-nav align-items-center">
+                
+                <li class="nav-item me-3">
+                    <button id="theme-toggle" class="btn btn-link nav-link" style="text-decoration: none;" title="Cambiar modo claro/oscuro">
+                        <i id="theme-toggle-dark-icon" class="fas fa-moon"></i>
+                        <i id="theme-toggle-light-icon" class="fas fa-sun d-none"></i>
+                    </button>
+                </li>
                 @auth
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
-                            <!-- FOTO DE PERFIL EN EL MENÚ -->
                             @if(Auth::user()->profile_photo_path)
                                 <img src="{{ asset('storage/' . Auth::user()->profile_photo_path) }}" 
                                      alt="Perfil" 

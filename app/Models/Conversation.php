@@ -17,7 +17,7 @@ class Conversation extends Model
         'admin_id'
     ];
 
-    // Relación: Participantes del chat
+    
     public function participants()
     {
         return $this->belongsToMany(User::class, 'conversation_user')
@@ -25,13 +25,13 @@ class Conversation extends Model
                     ->withTimestamps();
     }
 
-    // Relación: Mensajes del chat
+    
     public function messages()
     {
         return $this->hasMany(Message::class);
     }
 
-    // Último mensaje (para mostrar en la lista de chats)
+    
     public function lastMessage()
     {
         return $this->hasOne(Message::class)->latest();
@@ -39,23 +39,23 @@ class Conversation extends Model
 
     // --- ACCESSORS ---
 
-    // Obtener el nombre del chat (Si es privado, usa el nombre del otro usuario)
+    
     public function getTitleAttribute()
     {
         if ($this->is_group) {
             return $this->name ?? 'Grupo sin nombre';
         }
 
-        // Si es chat privado, buscamos al "otro" usuario
+       
         $otherUser = $this->participants->where('id', '!=', Auth::id())->first();
         return $otherUser ? $otherUser->name : 'Usuario Desconocido';
     }
 
-    // Obtener la foto del chat (Si es privado, usa la foto del otro usuario)
+    
     public function getImageAttribute()
     {
         if ($this->is_group) {
-            return $this->icon ? asset('storage/' . $this->icon) : asset('images/group-default.png'); // Asegúrate de tener una imagen default
+            return $this->icon ? asset('storage/' . $this->icon) : asset('images/group-default.png'); 
         }
 
         $otherUser = $this->participants->where('id', '!=', Auth::id())->first();

@@ -15,23 +15,23 @@ class Group extends Model
         'category',
         'is_private',
         'admin_id',
-        'group_photo_path', // NUEVO
-        'cover_photo_path'  // NUEVO
+        'group_photo_path', 
+        'cover_photo_path'  
     ];
 
     protected $casts = [
         'is_private' => 'boolean',
     ];
 
-    // --- RELACIONES ---
+    
 
-    // 1. El Administrador (Creador del grupo)
+    
     public function admin()
     {
         return $this->belongsTo(User::class, 'admin_id');
     }
 
-    // 2. Los Miembros del grupo (Relación muchos a muchos)
+    
     public function members()
     {
         return $this->belongsToMany(User::class, 'group_user', 'group_id', 'user_id')
@@ -39,17 +39,13 @@ class Group extends Model
                     ->withTimestamps();
     }
 
-    // 3. Los Mensajes del grupo
+    
     public function messages()
     {
         return $this->hasMany(GroupMessage::class);
     }
 
-    // --- ACCESORS (OPCIONALES) PARA MÁS FACILIDAD ---
-
-    /**
-     * Obtener la URL completa de la foto del grupo
-     */
+  
     public function getGroupPhotoUrlAttribute()
     {
         if ($this->group_photo_path) {
@@ -58,9 +54,7 @@ class Group extends Model
         return null;
     }
 
-    /**
-     * Obtener la URL completa de la foto de portada
-     */
+   
     public function getCoverPhotoUrlAttribute()
     {
         if ($this->cover_photo_path) {
@@ -69,17 +63,13 @@ class Group extends Model
         return null;
     }
 
-    /**
-     * Verificar si el grupo tiene foto
-     */
+    
     public function getHasGroupPhotoAttribute()
     {
         return !is_null($this->group_photo_path);
     }
 
-    /**
-     * Verificar si el grupo tiene foto de portada
-     */
+    
     public function getHasCoverPhotoAttribute()
     {
         return !is_null($this->cover_photo_path);

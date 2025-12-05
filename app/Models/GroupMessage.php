@@ -29,7 +29,7 @@ class GroupMessage extends Model
 
     // --- NUEVOS MÉTODOS PARA MODERACIÓN ---
     
-    // Verificar si el mensaje puede ser eliminado por un usuario
+   
     public function canBeDeletedBy($user)
     {
         return $user->id === $this->user_id || 
@@ -37,13 +37,13 @@ class GroupMessage extends Model
                $user->isAdminOfGroup($this->group_id);
     }
 
-    // Verificar si el mensaje tiene archivo adjunto
+    
     public function hasAttachment()
     {
         return !is_null($this->file_path);
     }
 
-    // Obtener el tipo de archivo en formato legible
+    
     public function getAttachmentType()
     {
         if (!$this->hasAttachment()) return null;

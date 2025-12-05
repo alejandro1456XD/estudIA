@@ -4,18 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Resource;
 use App\Models\ResourceRating;
+use App\Services\GamificationService; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\Log; 
 
 class ResourceController extends Controller
 {
-    /**
-     * Muestra la lista de recursos y el Top 3.
-     */
+   
     public function index(Request $request)
     {
-        // 1. OBTENER EL TOP 3 (Mejores calificados)
+        
         $topResources = Resource::withAvg('ratings', 'rating')
             ->withCount('ratings')
             ->orderByDesc('ratings_avg_rating')
@@ -23,7 +24,7 @@ class ResourceController extends Controller
             ->take(3)
             ->get();
 
-        // 2. OBTENER EL RESTO DE RECURSOS (Con filtros)
+        
         $query = Resource::query()->with('user');
 
         if ($request->filled('search')) {
@@ -39,88 +40,124 @@ class ResourceController extends Controller
         return view('resources.index', compact('topResources', 'resources'));
     }
 
-    /**
-     * Guarda un nuevo recurso subido por el usuario.
-     */
-    public function store(Request $request)
+   
+    public function store(Request $request, GamificationService $gamification)
     {
         $request->validate([
             'title' => 'required|string|max:100',
             'category' => 'required|string',
-            'file' => 'required|file|max:51200', // Máximo 50MB
+            'file' => 'required|file|max:51200', 
         ]);
 
-        $file = $request->file('file');
-        $mime = $file->getMimeType();
-        $type = 'file';
+        
+        DB::beginTransaction();
+        $path = null; 
 
-        if (str_contains($mime, 'pdf')) $type = 'pdf';
-        elseif (str_contains($mime, 'image')) $type = 'image';
-        elseif (str_contains($mime, 'video')) $type = 'video';
-        elseif (str_contains($mime, 'zip') || str_contains($mime, 'rar')) $type = 'zip';
+        try {
+            $file = $request->file('file');
+            $mime = $file->getMimeType();
+            
+            
+            $type = 'file';
+            if (str_contains($mime, 'pdf')) $type = 'pdf';
+            elseif (str_contains($mime, 'image')) $type = 'image';
+            elseif (str_contains($mime, 'video')) $type = 'video';
+            elseif (str_contains($mime, 'zip') || str_contains($mime, 'rar')) $type = 'zip';
 
-        $sizeBytes = $file->getSize();
-        $size = number_format($sizeBytes / 1048576, 2) . ' MB';
+            
+            $sizeBytes = $file->getSize();
+            $size = number_format($sizeBytes / 1048576, 2) . ' MB';
 
-        $path = $file->store('resources', 'public');
+            
+            $path = $file->store('resources', 'public');
 
-        Resource::create([
-            'user_id' => Auth::id(),
-            'title' => $request->title,
-            'category' => $request->category,
-            'file_path' => $path,
-            'file_type' => $type,
-            'file_size' => $size,
-            'downloads' => 0
-        ]);
+            
+            Resource::create([
+                'user_id' => Auth::id(),
+                'title' => $request->title,
+                'category' => $request->category,
+                'file_path' => $path,
+                'file_type' => $type,
+                'file_size' => $size,
+                'downloads' => 0
+            ]);
 
-        return redirect()->back()->with('success', '¡Recurso compartido exitosamente!');
+            try {
+                $gamification->earn(Auth::user(), 'upload_resource');
+            } catch (\Exception $e) {
+                Log::error("Error gamificación al subir recurso: " . $e->getMessage());
+            }
+
+            DB::commit(); 
+
+            return redirect()->back()->with('success', '¡Recurso compartido exitosamente! Has ganado monedas.');
+
+        } catch (\Exception $e) {
+            DB::rollBack(); 
+            
+            
+            if ($path && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            Log::error("Error subiendo recurso: " . $e->getMessage());
+            
+            return redirect()->back()
+                ->with('error', 'Hubo un error al subir tu recurso. Por favor intenta de nuevo.')
+                ->withInput();
+        }
     }
 
-    /**
-     * Maneja la descarga y cuenta +1.
-     * CORREGIDO: Usamos response()->download para evitar errores de IDE y mejorar compatibilidad.
-     */
+   
     public function download(Resource $resource)
     {
-        // 1. Incrementamos el contador
-        $resource->increment('downloads');
+        try {
+            
+            if (!Storage::disk('public')->exists($resource->file_path)) {
+                return back()->with('error', 'El archivo físico no se encuentra disponible.');
+            }
 
-        // 2. Verificamos que el archivo exista físicamente
-        if (!Storage::disk('public')->exists($resource->file_path)) {
-            return back()->with('error', 'El archivo físico no se encuentra.');
+            $resource->increment('downloads');
+
+            
+            $filePath = Storage::disk('public')->path($resource->file_path);
+            $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+            
+            
+            $cleanTitle = preg_replace('/[^A-Za-z0-9\- ]/', '', $resource->title);
+            $downloadName = $cleanTitle . '.' . $extension;
+
+            return response()->download($filePath, $downloadName);
+
+        } catch (\Exception $e) {
+            Log::error("Error en descarga: " . $e->getMessage());
+            return back()->with('error', 'Error al procesar la descarga.');
         }
-
-        // 3. Obtenemos la ruta absoluta para la descarga
-        $filePath = Storage::disk('public')->path($resource->file_path);
-        
-        // 4. Aseguramos que el nombre de descarga tenga la extensión correcta (ej: Guia.pdf)
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        $downloadName = $resource->title . '.' . $extension;
-
-        // 5. Forzamos la descarga usando el helper de respuesta
-        return response()->download($filePath, $downloadName);
     }
 
-    /**
-     * Guarda la calificación (Estrellas).
-     */
+    
     public function rate(Request $request, Resource $resource)
     {
         $request->validate([
             'rating' => 'required|integer|min:1|max:5'
         ]);
 
-        ResourceRating::updateOrCreate(
-            [
-                'resource_id' => $resource->id,
-                'user_id' => Auth::id()
-            ],
-            [
-                'rating' => $request->rating
-            ]
-        );
+        try {
+            ResourceRating::updateOrCreate(
+                [
+                    'resource_id' => $resource->id,
+                    'user_id' => Auth::id()
+                ],
+                [
+                    'rating' => $request->rating
+                ]
+            );
 
-        return redirect()->back()->with('success', '¡Gracias por calificar este recurso!');
+            return redirect()->back()->with('success', '¡Gracias por calificar este recurso!');
+
+        } catch (\Exception $e) {
+            Log::error("Error al calificar: " . $e->getMessage());
+            return redirect()->back()->with('error', 'No se pudo guardar tu calificación.');
+        }
     }
 }

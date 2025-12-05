@@ -11,7 +11,7 @@ class ResourceRating extends Model
 
     protected $fillable = ['resource_id', 'user_id', 'rating'];
 
-    // Relación inversa: Cada voto pertenece a un recurso
+    
     public function resource()
     {
         return $this->belongsTo(Resource::class);

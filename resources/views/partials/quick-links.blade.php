@@ -10,9 +10,14 @@
             ['icon' => 'graduation-cap', 'text' => 'Mis Cursos', 'color' => 'warning', 'route' => 'courses'],
             ['icon' => 'user', 'text' => 'Mi Perfil', 'color' => 'secondary', 'route' => 'profile'],
             ['icon' => 'calendar', 'text' => 'Eventos', 'color' => 'danger', 'route' => 'events'],
-            ['icon' => 'book', 'text' => 'Recursos', 'color' => 'dark', 'route' => 'resources']
+            ['icon' => 'book', 'text' => 'Recursos', 'color' => 'dark', 'route' => 'resources'],
+            
+            // 👇 ¡NUEVA OPCIÓN AGREGADA AQUÍ! 👇
+            ['icon' => 'brain', 'text' => 'Demuestra lo Aprendido', 'color' => 'primary', 'route' => 'tests.index']
+            
         ] as $link)
         <a href="{{ route($link['route']) }}" class="list-group-item list-group-item-action">
+            {{-- Renderiza el ícono y el texto --}}
             <i class="fas fa-{{ $link['icon'] }} me-2 text-{{ $link['color'] }}"></i>{{ $link['text'] }}
         </a>
         @endforeach

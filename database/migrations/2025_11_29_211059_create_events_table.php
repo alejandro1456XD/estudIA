@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up()
     {
-        // 1. Crear tabla EVENTS
+       
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('description')->nullable();
             
-            // Estas son las columnas que te faltaban
+          
             $table->dateTime('start_time'); 
             $table->string('location')->nullable();
             $table->boolean('is_virtual')->default(false);
@@ -25,10 +25,10 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Crear tabla ASISTENTES
+        
         Schema::create('event_attendees', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained('events')->onDelete('cascade'); // Importante: 'events'
+            $table->foreignId('event_id')->constrained('events')->onDelete('cascade'); 
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
 

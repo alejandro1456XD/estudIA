@@ -26,42 +26,41 @@ class Event extends Model
         'is_virtual' => 'boolean',
     ];
 
-    // Relación: El creador del evento
+    
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relación: Los asistentes (Muchos usuarios a través de la tabla pivote)
+    
     public function attendees()
     {
         return $this->belongsToMany(User::class, 'event_attendees')->withTimestamps();
     }
 
-    // --- ACCESSORS (Cálculos automáticos) ---
+    
 
-    // 1. ¿Cuántos cupos quedan?
+    
     public function getSpotsLeftAttribute()
     {
         if (is_null($this->max_attendees)) {
-            return '∞'; // Ilimitado
+            return '∞'; 
         }
         
         return max(0, $this->max_attendees - $this->attendees()->count());
     }
 
-    // 2. ¿El usuario actual ya se inscribió?
+   
     public function getIsAttendingAttribute()
     {
         if (!Auth::check()) return false;
         
-        // CORRECCIÓN: Si soy el creador, cuento como asistente automáticamente
-        // Opcional: Si quieres que el creador también tenga que darle click, borra esta línea.
+        
         if ($this->user_id === Auth::id()) {
             return true; 
         }
         
-        // Verificamos si el ID del usuario está en la lista de asistentes
+        
         return $this->attendees()->where('user_id', Auth::id())->exists();
     }
 }

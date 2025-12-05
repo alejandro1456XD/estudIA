@@ -76,6 +76,12 @@
                         <div class="p-3 bg-light rounded-3">
                             <p class="mb-2"><strong><i class="fas fa-user-tag me-2 text-muted"></i>Bio:</strong> {{ $user->bio ?? 'Sin biografía definida' }}</p>
                             <p class="mb-2"><strong><i class="fas fa-envelope me-2 text-muted"></i>Email:</strong> {{ $user->email }}</p>
+                            
+                            <!-- MOSTRAR TELÉFONO SI EXISTE -->
+                            @if($user->phone)
+                                <p class="mb-2"><strong><i class="fab fa-whatsapp me-2 text-success"></i>WhatsApp:</strong> {{ $user->phone }}</p>
+                            @endif
+
                             <p class="mb-2"><strong><i class="fas fa-calendar me-2 text-muted"></i>Miembro desde:</strong> {{ $user->created_at->format('d/m/Y') }}</p>
                             
                             <!-- Contamos amigos de forma segura -->
@@ -132,6 +138,18 @@
                     <div class="mb-3">
                         <label for="name" class="form-label fw-bold">Nombre Completo</label>
                         <input type="text" class="form-control rounded-pill px-3" id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                    </div>
+
+                    <!-- Teléfono WhatsApp (NUEVO CAMPO) -->
+                    <div class="mb-3">
+                        <label for="phone" class="form-label fw-bold">WhatsApp (Con código país)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-success text-white border-0 rounded-start-pill ps-3"><i class="fab fa-whatsapp"></i></span>
+                            <input type="text" class="form-control rounded-end-pill" id="phone" name="phone" 
+                                   value="{{ old('phone', $user->phone) }}" 
+                                   placeholder="Ej: 59170707070">
+                        </div>
+                        <div class="form-text text-muted ms-2 small">Necesario para habilitar el botón de chat rápido.</div>
                     </div>
 
                     <!-- Bio -->

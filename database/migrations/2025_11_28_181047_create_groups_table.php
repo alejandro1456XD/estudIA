@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Tabla de GRUPOS (Verificar si ya existe antes de crear)
+        
         if (!Schema::hasTable('groups')) {
             Schema::create('groups', function (Blueprint $table) {
                 $table->id();
@@ -17,20 +17,20 @@ return new class extends Migration
                 $table->string('category')->nullable();
                 $table->boolean('is_private')->default(false);
                 
-                // El creador/administrador del grupo
+               
                 $table->foreignId('admin_id')->constrained('users')->onDelete('cascade');
                 
                 $table->timestamps();
             });
         }
 
-        // 2. Tabla Pivote (Verificar si ya existe antes de crear)
+        
         if (!Schema::hasTable('group_user')) {
             Schema::create('group_user', function (Blueprint $table) {
                 $table->id();
                 
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
-                $table->foreignId('group_id')->constrained('groups')->onDelete('cascade'); // Aseguramos que apunte a 'groups'
+                $table->foreignId('group_id')->constrained('groups')->onDelete('cascade'); 
                 
                 $table->string('role')->default('member');
                 

@@ -8,35 +8,35 @@ return new class extends Migration
 {
     public function up()
     {
-        // 1. CONVERSACIONES (Puede ser privada o grupal)
+        //  CONVERSACIONES 
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable(); // Solo para grupos
+            $table->string('name')->nullable(); 
             $table->boolean('is_group')->default(false);
-            $table->string('icon')->nullable(); // Foto del grupo
-            $table->foreignId('admin_id')->nullable()->constrained('users'); // Creador del grupo
+            $table->string('icon')->nullable(); 
+            $table->foreignId('admin_id')->nullable()->constrained('users'); 
             $table->timestamps();
         });
 
-        // 2. PARTICIPANTES (Quién está en qué conversación)
+        //  PARTICIPANTES 
         Schema::create('conversation_user', function (Blueprint $table) {
             $table->id();
             $table->foreignId('conversation_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->timestamp('last_read_at')->nullable(); // Para saber si leyó los mensajes
+            $table->timestamp('last_read_at')->nullable(); 
             $table->timestamps();
 
             $table->unique(['conversation_id', 'user_id']);
         });
 
-        // 3. MENSAJES
+        // MENSAJES
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('conversation_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained(); // Quién lo envió
-            $table->text('body')->nullable(); // Texto
-            $table->string('attachment')->nullable(); // Foto/Archivo
-            $table->string('type')->default('text'); // text, image, file
+            $table->foreignId('user_id')->constrained(); 
+            $table->text('body')->nullable(); 
+            $table->string('attachment')->nullable(); 
+            $table->string('type')->default('text'); 
             $table->boolean('is_read')->default(false);
             $table->timestamps();
         });

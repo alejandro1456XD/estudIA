@@ -8,23 +8,18 @@ use Illuminate\Support\Facades\Auth;
 
 class EventController extends Controller
 {
-    /**
-     * Muestra la lista de eventos próximos.
-     */
+    
     public function index()
     {
-        // SOLUCIÓN DEFINITIVA DE HORARIO:
-        // Definimos el "umbral" como el inicio del día de hoy (00:00 AM).
-        // Usamos subDay() por seguridad para cubrir diferencias de zona horaria extremas.
-        // Así, cualquier evento de "Ayer" en adelante se muestra como activo.
+        
         $threshold = now()->subDay()->startOfDay();
 
-        // 1. Eventos Próximos (De ayer, hoy y futuro)
+        
         $upcomingEvents = Event::where('start_time', '>=', $threshold)
             ->orderBy('start_time', 'asc')
             ->paginate(10);
 
-        // 2. Eventos Pasados (Solo los realmente antiguos)
+       
         $pastEvents = Event::where('start_time', '<', $threshold)
             ->orderBy('start_time', 'desc')
             ->take(5)
@@ -33,9 +28,7 @@ class EventController extends Controller
         return view('events.index', compact('upcomingEvents', 'pastEvents'));
     }
 
-    /**
-     * Muestra los eventos a los que el usuario asistirá.
-     */
+   
     public function myEvents()
     {
         /** @var \App\Models\User $user */
@@ -48,9 +41,7 @@ class EventController extends Controller
         return view('events.my_events', compact('myEvents'));
     }
 
-    /**
-     * Guarda un nuevo evento.
-     */
+    
     public function store(Request $request)
     {
         $request->validate([
@@ -76,26 +67,24 @@ class EventController extends Controller
         return redirect()->route('events')->with('success', '¡Evento creado exitosamente!');
     }
 
-    /**
-     * Permite al usuario asistir (o cancelar asistencia) a un evento.
-     */
+   
     public function toggleAttendance(Event $event)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 1. Cancelar asistencia
+        
         if ($event->attendees()->where('user_id', $user->id)->exists()) {
             $event->attendees()->detach($user->id);
             return back()->with('success', 'Has cancelado tu asistencia.');
         }
 
-        // 2. Verificar cupos
+        
         if ($event->spots_left === 0) {
             return back()->with('error', '¡Lo sentimos! Ya no hay cupos disponibles.');
         }
 
-        // 3. Inscribir
+        
         $event->attendees()->attach($user->id);
 
         return back()->with('success', '¡Te has inscrito al evento correctamente!');

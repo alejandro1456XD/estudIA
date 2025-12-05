@@ -31,67 +31,90 @@
                         </div>
                     </div>
                     
-                    <!-- MENÚ DE 3 PUNTOS (OPCIONES) -->
-                    <div class="dropdown">
-                        <button class="btn btn-light rounded-circle text-muted border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4">
-                            
-                            @if($conversation->is_group)
-                                @php
-                                    $me = $conversation->participants->where('id', auth()->id())->first();
-                                    $isCreator = $conversation->admin_id == auth()->id();
-                                    $isAdmin = $isCreator || ($me && $me->pivot->is_admin);
-                                @endphp
+                    <!-- BOTONES DE ACCIÓN (DERECHA) -->
+                    <div class="d-flex align-items-center gap-2">
+                        
+                        <!-- BOTÓN DE WHATSAPP (NUEVO) -->
+                        <!-- Solo aparece si NO es grupo y si el otro usuario tiene teléfono -->
+                        @if(!$conversation->is_group)
+                            @php
+                                // Buscamos al otro participante que no soy yo
+                                $otherUser = $conversation->participants->where('id', '!=', auth()->id())->first();
+                            @endphp
 
-                                <li><h6 class="dropdown-header">Grupo</h6></li>
-                                <li>
-                                    <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#groupMembersModal">
-                                        <i class="fas fa-users me-2 text-primary"></i>Ver Miembros
-                                    </button>
-                                </li>
-
-                                @if($isAdmin)
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Administración</h6></li>
-                                    <li>
-                                        <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#changePhotoModal">
-                                            <i class="fas fa-camera me-2 text-secondary"></i>Cambiar Foto
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addMembersModal">
-                                            <i class="fas fa-user-plus me-2 text-secondary"></i>Añadir Personas
-                                        </button>
-                                    </li>
-                                @endif
-
-                                <li><hr class="dropdown-divider"></li>
-
-                                @if(!$isCreator)
-                                    <!-- Opción Salir (Para todos MENOS el creador) -->
-                                    <li>
-                                        <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Abandonar Grupo
-                                        </button>
-                                    </li>
-                                @endif
-
-                                @if($isCreator)
-                                    <!-- Opción Eliminar (SOLO Creador) -->
-                                    <li>
-                                        <button class="dropdown-item text-danger fw-bold bg-danger-subtle" data-bs-toggle="modal" data-bs-target="#deleteGroupModal">
-                                            <i class="fas fa-trash-alt me-2"></i>Eliminar Grupo
-                                        </button>
-                                    </li>
-                                @endif
-                            @else
-                                <!-- Opciones para chat privado -->
-                                <li><a class="dropdown-item" href="#">Ver Perfil</a></li>
-                                <li><a class="dropdown-item text-danger" href="#">Eliminar Chat</a></li>
+                            @if($otherUser && $otherUser->phone)
+                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $otherUser->phone) }}" target="_blank" 
+                                   class="btn btn-success text-white rounded-pill px-3 py-1 shadow-sm d-flex align-items-center gap-2"
+                                   style="background-color: #25D366; border: none; text-decoration: none;"
+                                   title="Abrir chat en WhatsApp">
+                                    <i class="fab fa-whatsapp fa-lg"></i> 
+                                    <span class="d-none d-md-inline fw-bold small">WhatsApp</span>
+                                </a>
                             @endif
-                        </ul>
+                        @endif
+
+                        <!-- MENÚ DE 3 PUNTOS (OPCIONES) -->
+                        <div class="dropdown">
+                            <button class="btn btn-light rounded-circle text-muted border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4">
+                                
+                                @if($conversation->is_group)
+                                    @php
+                                        $me = $conversation->participants->where('id', auth()->id())->first();
+                                        $isCreator = $conversation->admin_id == auth()->id();
+                                        $isAdmin = $isCreator || ($me && $me->pivot->is_admin);
+                                    @endphp
+
+                                    <li><h6 class="dropdown-header">Grupo</h6></li>
+                                    <li>
+                                        <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#groupMembersModal">
+                                            <i class="fas fa-users me-2 text-primary"></i>Ver Miembros
+                                        </button>
+                                    </li>
+
+                                    @if($isAdmin)
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><h6 class="dropdown-header">Administración</h6></li>
+                                        <li>
+                                            <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#changePhotoModal">
+                                                <i class="fas fa-camera me-2 text-secondary"></i>Cambiar Foto
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addMembersModal">
+                                                <i class="fas fa-user-plus me-2 text-secondary"></i>Añadir Personas
+                                            </button>
+                                        </li>
+                                    @endif
+
+                                    <li><hr class="dropdown-divider"></li>
+
+                                    @if(!$isCreator)
+                                        <!-- Opción Salir -->
+                                        <li>
+                                            <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Abandonar Grupo
+                                            </button>
+                                        </li>
+                                    @endif
+
+                                    @if($isCreator)
+                                        <!-- Opción Eliminar -->
+                                        <li>
+                                            <button class="dropdown-item text-danger fw-bold bg-danger-subtle" data-bs-toggle="modal" data-bs-target="#deleteGroupModal">
+                                                <i class="fas fa-trash-alt me-2"></i>Eliminar Grupo
+                                            </button>
+                                        </li>
+                                    @endif
+                                @else
+                                    <!-- Opciones para chat privado -->
+                                    <li><a class="dropdown-item" href="#">Ver Perfil</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#">Eliminar Chat</a></li>
+                                @endif
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -275,7 +298,7 @@
     </div>
 </div>
 
-<!-- MODAL: CONFIRMAR ABANDONAR GRUPO (NUEVO) -->
+<!-- MODAL: CONFIRMAR ABANDONAR GRUPO -->
 <div class="modal fade" id="leaveGroupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -304,7 +327,7 @@
     </div>
 </div>
 
-<!-- MODAL: CONFIRMAR ELIMINAR GRUPO (NUEVO) -->
+<!-- MODAL: CONFIRMAR ELIMINAR GRUPO -->
 <div class="modal fade" id="deleteGroupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
